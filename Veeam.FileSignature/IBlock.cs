@@ -2,7 +2,7 @@
 
 namespace Veeam.FileSignature
 {
-    internal interface ICalculatableBlock
+    public interface IBlock
     {
         void Calculate();
     }

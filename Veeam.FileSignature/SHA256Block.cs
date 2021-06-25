@@ -1,33 +1,35 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 
 namespace Veeam.FileSignature
 {
-    internal class SHA256Block : ICalculatableBlock
+    public class SHA256Block : IBlock
     {
         private int _blockNumber;
         private byte[] _hashValue;
-        private Stream _dataStream;
+        private byte[] _data;
+        private int _blockSize;
 
-        public SHA256Block(int blockNumber, Stream dataStream)
+        public SHA256Block(int blockNumber, byte[] data, int blockSize)
         {
             _blockNumber = blockNumber;
-            _dataStream = dataStream;
+            _data = data;
+            _blockSize = blockSize;
         }
 
         public void Calculate()
         {
-            if (_dataStream.CanRead)
+            if (_data != null)
             {
-
                 using (SHA256 sha256 = SHA256.Create())
                 {
                     try
                     {
-                        _hashValue = sha256.ComputeHash(_dataStream);
+                        _hashValue = sha256.ComputeHash(_data, 0, _blockSize);
                     }
                     catch (Exception ex)
                     {
@@ -39,6 +41,11 @@ namespace Veeam.FileSignature
             {
                 throw new Exception($"{_blockNumber}, Can't read data stream.");
             }
+        }
+
+        public override string ToString()
+        {
+            return $"{_blockNumber}: {Encoding.Default.GetString(_hashValue)}/n";
         }
     }
 }
