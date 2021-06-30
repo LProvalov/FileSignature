@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -45,7 +42,12 @@ namespace Veeam.FileSignature
 
         public override string ToString()
         {
-            return $"{_blockNumber}: {Encoding.Default.GetString(_hashValue)}/n";
+            StringBuilder sb = new StringBuilder();
+            foreach (var b in _hashValue)
+            {
+                sb.Append(b.ToString("X2"));
+            }
+            return $"{_blockNumber}: {sb.ToString()}/n";
         }
     }
 }

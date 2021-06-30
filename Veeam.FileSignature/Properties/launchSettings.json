@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Veeam.FileSignature": {
+      "commandName": "Project",
+      "commandLineArgs": "\"D:\\get8_tpg_v52\\seq_redir.xmh\" 524288"
+    }
+  }
+}

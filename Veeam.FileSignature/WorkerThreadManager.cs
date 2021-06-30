@@ -1,27 +1,33 @@
 ﻿using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Text;
 using System.Threading;
 
 namespace Veeam.FileSignature
 {
-    public interface IWorkerThreadManager
-    {
-        public void EnqueueWork(IWorkItem workItem);
-    }
-
-    public class WorkerThreadManager : IWorkerThreadManager
+   public class WorkerThreadManager
     {
         private readonly ConcurrentQueue<IWorkItem> _workItemsQueue;
-
-        private int _workerThreadsCount;
+        private readonly int _workerThreadsCount;
+        private readonly Thread _processThread;
         private WorkerThread[] _workerThreads;
-        private Thread _processThread;
-
+        private bool _needToStop;
+        private bool _inProgress;
+        
         public WorkerThreadManager()
         {
             _workerThreadsCount = Environment.ProcessorCount;
+            _workItemsQueue = new ConcurrentQueue<IWorkItem>();
+            _processThread = new Thread(new ThreadStart(Process));
+            _processThread.Start();
+        }
+
+        public WorkerThreadManager(int threadsCount)
+        {
+            if (threadsCount <= 0)
+            {
+                throw new ArgumentException("ThreadCount");
+            }
+            _workerThreadsCount = threadsCount;
             _workItemsQueue = new ConcurrentQueue<IWorkItem>();
             _processThread = new Thread(new ThreadStart(Process));
             _processThread.Start();
@@ -39,19 +45,20 @@ namespace Veeam.FileSignature
 
         private void Process()
         {
+            _inProgress = true;
             _workerThreads = new WorkerThread[_workerThreadsCount];
             for (int i = 0; i < _workerThreadsCount; i++)
             {
                 _workerThreads[i] = new WorkerThread();
             }
 
-            while (true)
+            while (_inProgress)
             {
                 if (_workItemsQueue.TryDequeue(out IWorkItem workItem))
                 {
                     WorkerThread workerThread = null;
                     int workerThreadIndex = 0;
-                    while (workerThread == null)
+                    while (workerThread == null && !_needToStop)
                     {
                         if (workerThreadIndex == _workerThreads.Length)
                         {
@@ -60,12 +67,39 @@ namespace Veeam.FileSignature
 
                         if (_workerThreads[workerThreadIndex].Status == WorkerThread.WorkerThreadStatus.Free)
                         {
-                            _workerThreads[workerThreadIndex].AddWork(workItem);
+                            workerThread = _workerThreads[workerThreadIndex];
+                            workerThread.AddWork(workItem);
                         }
                         workerThreadIndex++;
                     }
                 }
+                else
+                {
+                    if (_needToStop)
+                    {
+                        StopWorking();
+                    }
+                }
             }
+        }
+
+        public void StopWorking()
+        {
+            foreach (var workerThread in _workerThreads)
+            {
+                workerThread.StopWorkerThread();
+            }
+            foreach (var workerThread in _workerThreads)
+            {
+                workerThread.Join(500);
+            }
+            _needToStop = true;
+            _inProgress = false;
+        }
+
+        public void FinishAndStop()
+        {
+            _needToStop = true;
         }
     }
 }

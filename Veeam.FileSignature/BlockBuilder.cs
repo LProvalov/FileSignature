@@ -10,6 +10,7 @@ namespace Veeam.FileSignature
         private long _currentPositionInFile;
         private long _fileSize;
         private int _blockByteSize;
+        private int _bytesRead = 0;
         private int _blockCount;
         private FileStream _fileStream;
 
@@ -38,6 +39,7 @@ namespace Veeam.FileSignature
 
             if (blockSize > 0)
             {
+                _bytesRead += blockSize;
                 return new SHA256Block(_blockCount++, buffer, blockSize);
             }
 

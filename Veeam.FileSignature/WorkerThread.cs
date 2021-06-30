@@ -11,11 +11,13 @@ namespace Veeam.FileSignature
         public enum WorkerThreadStatus
         {
             Free,
-            Busy
+            Busy,
+            Aborted
         }
 
-        private Thread _thread;
+        private readonly Thread _thread;
         private IWorkItem _workItem;
+        private bool _inProgress;
 
         public WorkerThreadStatus Status { get; private set; }
         
@@ -38,17 +40,40 @@ namespace Veeam.FileSignature
             return false;
         }
 
+        public void StopWorkerThread()
+        {
+            _inProgress = false;
+        }
+        
+        public void Join(int millisecondsTimeout)
+        {
+            if (!_thread.Join(millisecondsTimeout))
+            {
+                _thread.Abort();
+            };
+        }
+
         private void ThreadProc()
         {
-            while (true)
+            try
             {
-                //dequeue some data
-                if (_workItem != null)
+                _inProgress = true;
+                while (_inProgress)
                 {
-                    _workItem.ExecuteWorkItem();
-                    _workItem = null;
-                    Status = WorkerThreadStatus.Free;
+                    //dequeue some data
+                    if (_workItem != null)
+                    {
+                        _workItem.ExecuteWorkItem();
+                        _workItem = null;
+                        Status = WorkerThreadStatus.Free;
+                    }
                 }
+            }
+            catch (ThreadAbortException)
+            {
+                _inProgress = false;
+                _workItem = null;
+                Status = WorkerThreadStatus.Aborted;
             }
         }
     }

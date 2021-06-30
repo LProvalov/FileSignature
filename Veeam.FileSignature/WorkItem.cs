@@ -3,11 +3,11 @@ using System.Threading;
 
 namespace Veeam.FileSignature
 {
-    internal class WorkItem : IWorkItem
+    public class WorkItem : IWorkItem
     {
         private WaitCallback _callback;
         private Object _state;
-        internal WorkItem(WaitCallback waitCallback, Object state)
+        public WorkItem(WaitCallback waitCallback, Object state)
         {
             _callback = waitCallback;
             _state = state;

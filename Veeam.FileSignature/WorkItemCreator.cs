@@ -1,10 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Veeam.FileSignature
 {
-    public class WorkItemCreator : IWorkItemCreator
+    public class WorkItemCreator
     {
         private IBlock _block;
 
@@ -29,8 +27,13 @@ namespace Veeam.FileSignature
             if (_block == null)
             {
                 return null;
-            } 
-            return new WorkItem((state) => { _block.Calculate(); }, null);
+            }
+            var block = _block;
+            return new WorkItem((state) =>
+            {
+                block.Calculate();
+                Console.WriteLine(block.ToString());
+            }, null);
         }
     }
 }
