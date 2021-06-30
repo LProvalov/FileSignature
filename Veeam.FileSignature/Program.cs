@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 
@@ -8,7 +9,8 @@ namespace Veeam.FileSignature
     {
         private static void Main(string[] args)
         {
-            var workerThreadManager = new WorkerThreadManager();
+            Stopwatch stopWatch = new Stopwatch();
+            WorkerThreadManager workerThreadManager = null;
             try
             {
                 FileInfo fileInfo;
@@ -25,9 +27,20 @@ namespace Veeam.FileSignature
                 {
                     throw new ArgumentException("Input args are incorrect. Can't parse block byte size value");
                 }
-                
+
+                if (args.Length == 3 &&
+                    int.TryParse(args[2], NumberStyles.Integer, new NumberFormatInfo(), out int threadCount))
+                {
+                    workerThreadManager = new WorkerThreadManager(threadCount);
+                }
+                else
+                {
+                    workerThreadManager = new WorkerThreadManager();
+                }
+
                 var workItemCreator = new WorkItemCreator();
 
+                stopWatch.Start();
                 using (var blockBuilder = new BlockBuilder(fileInfo, blockByteSize))
                 {
                     while (!blockBuilder.EoF)
@@ -45,8 +58,19 @@ namespace Veeam.FileSignature
             }
             catch (Exception ex)
             {
-                workerThreadManager.StopWorking();
+                workerThreadManager?.StopWorking();
+                workerThreadManager?.Join();
                 Utility.OutputException(ex);
+            }
+            finally
+            {
+                workerThreadManager?.Join();
+                stopWatch.Stop();
+                TimeSpan ts = stopWatch.Elapsed;
+                string elapsedTime = String.Format("Working time: {0:00}:{1:00}:{2:00}.{3:00}",
+                                                   ts.Hours, ts.Minutes, ts.Seconds,
+                                                   ts.Milliseconds / 10);
+                Console.WriteLine(elapsedTime);
             }
         }
     }

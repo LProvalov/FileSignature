@@ -47,7 +47,7 @@ namespace Veeam.FileSignature
             return null;
         }
 
-        public bool EoF { get; private set; }
+        public bool EoF { get; private set; } = false;
 
         public void Dispose()
         {

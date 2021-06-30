@@ -26,6 +26,7 @@ namespace Veeam.FileSignature
             _workItem = null;
             Status = WorkerThreadStatus.Free;
             _thread = new Thread(new ThreadStart(ThreadProc));
+            _thread.IsBackground = true;
             _thread.Start();
         }
 
@@ -44,13 +45,11 @@ namespace Veeam.FileSignature
         {
             _inProgress = false;
         }
-        
-        public void Join(int millisecondsTimeout)
+
+        public void Join()
         {
-            if (!_thread.Join(millisecondsTimeout))
-            {
-                _thread.Abort();
-            };
+            //TODO: Do smth with abort. Abort is obsolete method for platform higher than .net5
+            _thread.Join();
         }
 
         private void ThreadProc()

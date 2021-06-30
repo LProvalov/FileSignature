@@ -58,8 +58,13 @@ namespace Veeam.FileSignature
                 {
                     WorkerThread workerThread = null;
                     int workerThreadIndex = 0;
-                    while (workerThread == null && !_needToStop)
+                    while (workerThread == null && _inProgress)
                     {
+                        if (_needToStop && _workItemsQueue.Count == 0)
+                        {
+                            break;
+                        }
+
                         if (workerThreadIndex == _workerThreads.Length)
                         {
                             workerThreadIndex = 0;
@@ -89,12 +94,16 @@ namespace Veeam.FileSignature
             {
                 workerThread.StopWorkerThread();
             }
-            foreach (var workerThread in _workerThreads)
-            {
-                workerThread.Join(500);
-            }
             _needToStop = true;
             _inProgress = false;
+        }
+
+        public void Join()
+        {
+            foreach (var workerThread in _workerThreads)
+            {
+                workerThread.Join();
+            }
         }
 
         public void FinishAndStop()
